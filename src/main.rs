@@ -24,9 +24,24 @@ fn parse_list(init_list: Entity)
 
     for field in assignments
     {
-        println!(".{member_name} = {value}",
-                 member_name = field.get_child(0).unwrap().get_display_name().unwrap(),
-                 value = into_sources(field.get_child(1).unwrap()));
+        let name = field.get_child(0).unwrap().get_display_name().unwrap();
+        let value = into_sources(field.get_child(1).unwrap());
+
+        let info = if name != "pf_foo" { String::from("") } else {
+            let func_type = field
+                .get_child(1)
+                .unwrap()
+                .get_child(0)
+                .unwrap()
+                .get_definition();
+
+            format!(" == {}", func_type.unwrap().get_display_name().unwrap())
+        };
+
+        println!(".{member_name} = {value} {info}",
+                 member_name = name,
+                 value = value,
+                 info = info);
     }
 }
 
