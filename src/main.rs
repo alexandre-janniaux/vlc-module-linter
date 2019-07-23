@@ -2,21 +2,40 @@ extern crate clang;
 
 use clang::{Clang, Index, Entity, EntityKind};
 
-fn parse_list(init_list: Entity)
+fn into_sources(entity: Entity)
+    -> String
 {
-    println!("parsing list recursively ...\n{:?}", init_list);
-    let sources = init_list.get_range().unwrap()
+    entity.get_range().unwrap()
         .tokenize()
         .into_iter()
         .map(|token| token.get_spelling())
-        .fold(String::new(), |previous, token| format!("{} {}", previous, token));
+        .fold(String::new(), |previous, token| format!("{} {}", previous, token))
+}
 
+fn parse_list(init_list: Entity)
+{
+    println!("parsing list recursively ...");
+
+    let sources = into_sources(init_list);
     println!("== {}", sources);
 
-    for field in init_list.get_children()
+    let assignments = init_list
+        .get_children();
+
+    for field in assignments
     {
-        println!("==> {:?}\n", field);
-        parse_list(field);
+        println!(".{member_name} = {value}",
+                 member_name = field.get_child(0).unwrap().get_display_name().unwrap(),
+                 value = into_sources(field.get_child(1).unwrap()));
+    }
+}
+
+fn display_recursively(entity: Entity, level: usize)
+{
+    println!("{:indent$}{entity:?}", "", indent=level*4, entity=entity);
+    for field in entity.get_children()
+    {
+        display_recursively(field, level + 1)
     }
 }
 
@@ -51,8 +70,7 @@ fn main()
                  struct_decl.get_name().unwrap(),
                  struct_type.get_display_name());
 
-        println!("analysing evaluation: {:?}", struct_decl.evaluate());
-        println!("analysing definition: {:?}", struct_decl.get_definition().unwrap().evaluate());
+        display_recursively(struct_decl, 0);
 
         for field in struct_decl.get_children()
         {
